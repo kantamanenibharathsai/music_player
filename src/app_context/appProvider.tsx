@@ -6,7 +6,7 @@ const AppProvider = ({ children }: { children: React.ReactNode }) => {
   const [songsArr, setSongsArr] = useState<MyObject[]>(songsList);
 
   const allSongsFunc = (id: number) => {
-    console.log(id)
+    console.log("song id" , id)
     setSongsArr(
       songsArr.map((eachSong) => {
         if (eachSong.id === id) return { ...eachSong, active: true, isSongPlaying: !eachSong.isSongPlaying };

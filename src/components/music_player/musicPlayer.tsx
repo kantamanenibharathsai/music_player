@@ -10,6 +10,7 @@ import { useContext, useEffect, useMemo, useState } from "react";
 import { Howl } from "howler";
 import MusicContext from "../../app_context/musicContext";
 
+let interval : NodeJS.Timer;
 
 const Music: React.FC = () => {
   const [currentSongId, setCurrentSongId] = useState<number>(1);
@@ -18,7 +19,7 @@ const Music: React.FC = () => {
   const [sliderPosition, setSliderPosition] = useState<number>(0);
   const [audio, setAudio] = useState<Howl | null>(null)
   const [currentTime, setCurrentTime] = useState<number>(0)
-  const [currentPlaybackPosition, setCurrentPlaybackPosition] = useState<number>(0);
+  // const [currentPlaybackPosition, setCurrentPlaybackPosition] = useState<number>(0);
 
   const {
     allSongs,
@@ -36,6 +37,7 @@ const Music: React.FC = () => {
   
     const newAudio = new Howl({
       src: [currentSongObj!.audio],
+      loop: true,
       onend: handleNext,
       onplay: () => setIsCurrentSongPlaying(true),
       // seek: currentPlaybackPosition / 1000,
@@ -45,7 +47,7 @@ const Music: React.FC = () => {
   };
 
   useEffect(() => {
-    console.log(currentSongId)
+    // console.log(currentSongId)
     loadAudio();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentSongId])
@@ -54,12 +56,12 @@ const Music: React.FC = () => {
     // console.log(audio, isCurrentSongPlaying)
     if (audio) {
       if (isCurrentSongPlaying) {
-        console.log(audio.seek());
+        // console.log(audio.seek());
         audio.pause();
       
       } else {
-        setSliderPosition(audio.seek());
-        // audio.seek(audio.seek())
+        // setSliderPosition(audio.seek());
+        audio.seek(sliderPosition)
         audio.play();
       }
       setIsCurrentSongPlaying(!isCurrentSongPlaying);
@@ -67,30 +69,39 @@ const Music: React.FC = () => {
   };
 
   const handleNext = () => {
+    setSliderPosition(0)
     if (currentSongId < allSongs.length) {
       if (audio) {
         audio.stop();
       }
       setCurrentSongId(currentSongId + 1);
+      
     }
   };
 
   const handlePrevious = () => {
+    setSliderPosition(0)
     if (currentSongId > 1) {
       if (audio) {
         audio.stop();
       }
     setCurrentSongId(currentSongId - 1);
+    
     }
   };
 
-  const handleSliderChange = () => {
-    // console.log("slider change called")
-    setSliderPosition(audio!.seek());
-  };
+  // const handleSliderChange = () => {
+  //   console.log("slider change called")
+  //   setSliderPosition(audio!.seek());
+  // };
+  const handleSliderChange = (event: Event, newValue: number | number[]) => {
+    if (typeof newValue === 'number') {
+      setSliderPosition(newValue);
+    }
+  }
 
   const handleSliderRelease = (newValue: number | number[]) => {
-    // console.log("release", audio?.duration())
+    //  console.log("release", audio?.duration())
     if (audio) {
       audio.seek(newValue as number);
       setSliderPosition(newValue as number);
@@ -108,20 +119,34 @@ const Music: React.FC = () => {
     }
   }, [isCurrentSongPlaying, audio]);
 
+
+
+  const getSliderPosition = () => {
+    console.log(sliderPosition)
+    return sliderPosition
+  }
+
+  const clearingFunc = (interval : NodeJS.Timer) => {
+   return () => {
+      console.log("clear interval")
+      if (audio) {
+        audio.stop();
+      }
+      clearInterval(interval);
+    };
+  }
+
   useEffect(() => {
     // console.log(isCurrentSongPlaying)
     if (audio && isCurrentSongPlaying) {
-      const interval = setInterval(() => {
-        setCurrentTime(audio.seek());
+      interval = setInterval(() => {
+        console.log("playing")
+       
+        setCurrentTime(getSliderPosition());
         setSliderPosition(audio.seek())
       }, 1000);
 
-      return () => {
-        if (audio) {
-          audio.stop();
-        }
-        clearInterval(interval);
-      };
+      return clearingFunc(interval)
     }
   }, [isCurrentSongPlaying, audio]);
 
@@ -174,8 +199,17 @@ const Music: React.FC = () => {
               step={1}
               max={audio ? audio.duration() : 0}
               sx={{ margin: "5px 20px" }}
-              onChange={handleSliderChange}
-              onChangeCommitted={() => handleSliderRelease(sliderPosition)}
+              // onChange={(e) =>handleSliderChange(e, sliderPosition)}
+              onChange={(_, value) => {
+                // console.log(value)
+                // clearingFunc(interval)()
+                console.log("interval ID  ", interval)
+                setSliderPosition(value as number)
+              audio?.seek(value as number)
+              
+              }}
+          
+              // onChangeCommitted={() => handleSliderRelease(sliderPosition)}
             />
           </Box>
           <Box sx={styles.number}>
